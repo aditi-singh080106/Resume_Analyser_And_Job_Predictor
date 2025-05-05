@@ -3,12 +3,14 @@ import pickle
 import docx  # Extract text from Word file
 import PyPDF2  # Extract text from PDF
 import re
+from PIL import Image
+import pytesseract
 
 # Load pre-trained model and TF-IDF vectorizer (ensure these are saved earlier)
 svc_model = pickle.load(open('clf.pkl', 'rb'))  # Example file name, adjust as needed
 tfidf = pickle.load(open('tfidf.pkl', 'rb'))  # Example file name, adjust as needed
 le = pickle.load(open('encoder.pkl', 'rb'))  # Example file name, adjust as needed
-
+pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
 # Function to clean resume text
 def cleanResume(txt):
@@ -51,6 +53,13 @@ def extract_text_from_txt(file):
     return text
 
 
+# Function to extract text from image using OCR
+def extract_text_from_image(file):
+    image = Image.open(file)
+    text = pytesseract.image_to_string(image)
+    return text
+
+
 # Function to handle file upload and extraction
 def handle_file_upload(uploaded_file):
     file_extension = uploaded_file.name.split('.')[-1].lower()
@@ -60,8 +69,10 @@ def handle_file_upload(uploaded_file):
         text = extract_text_from_docx(uploaded_file)
     elif file_extension == 'txt':
         text = extract_text_from_txt(uploaded_file)
+    elif file_extension in ['jpg', 'jpeg', 'png']:
+        text = extract_text_from_image(uploaded_file)
     else:
-        raise ValueError("Unsupported file type. Please upload a PDF, DOCX, or TXT file.")
+        raise ValueError("Unsupported file type. Please upload a PDF, DOCX, TXT, or image file (jpg, jpeg, png).")
     return text
 
 
@@ -90,10 +101,10 @@ def main():
     st.set_page_config(page_title="Resume Category Prediction", page_icon="📄", layout="wide")
 
     st.title("Resume Category Prediction App")
-    st.markdown("Upload a resume in PDF, TXT, or DOCX format and get the predicted job category.")
+    st.markdown("Upload a resume in PDF, TXT, DOCX, or image format and get the predicted job category.")
 
     # File upload section
-    uploaded_file = st.file_uploader("Upload a Resume", type=["pdf", "docx", "txt"])
+    uploaded_file = st.file_uploader("Upload a Resume", type=["pdf", "docx", "txt", "jpg", "jpeg", "png"])
 
     if uploaded_file is not None:
         # Extract text from the uploaded file
